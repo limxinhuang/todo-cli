@@ -18,6 +18,19 @@ type Todo struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+func getMaxId() int {
+	todos, _ := loadTodos()
+	var maxId = 0
+
+	for _, t := range todos {
+		if t.ID > maxId {
+			maxId = t.ID
+		}
+	}
+
+	return maxId + 1
+}
+
 // 数据文件
 const dbFile = "todos.json"
 
@@ -59,7 +72,7 @@ func add(title string) {
 	todos, _ := loadTodos()
 
 	newTodo := Todo{
-		ID:        len(todos) + 1,
+		ID:        getMaxId(),
 		Title:     title,
 		Completed: false,
 		CreatedAt: time.Now(),
@@ -78,11 +91,11 @@ func list() {
 	fmt.Fprintln(w, "")
 
 	for _, t := range todos {
-		status := "X"
 		if t.Completed {
-			status = "V"
+			fmt.Fprintf(w, "%d\t%s\t\033[32m%s\033[0m\t%s\n", t.ID, t.Title, "V", t.CreatedAt)
+		} else {
+			fmt.Fprintf(w, "%d\t%s\t\033[31m%s\033[0m\t%s\n", t.ID, t.Title, "X", t.CreatedAt)
 		}
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\n", t.ID, t.Title, status, t.CreatedAt)
 	}
 	w.Flush()
 }
@@ -123,6 +136,27 @@ func deleteTodo(id int) {
 	fmt.Println("任务已删除")
 }
 
+func updateTitle(id int, title string) {
+	todos, _ := loadTodos()
+	var oldTitle string
+
+	for i, t := range todos {
+		if t.ID == id {
+			oldTitle = todos[i].Title
+			todos[i].Title = title
+			break
+		}
+	}
+
+	if oldTitle == "" {
+		fmt.Printf("任务ID %d 不存在\n", id)
+		return
+	}
+
+	saveTodos(todos)
+	fmt.Printf("任务ID %d 的标题修改成功 %s -> %s\n", id, oldTitle, title)
+}
+
 // Controller 层
 
 func main() {
@@ -157,6 +191,14 @@ func main() {
 		}
 		id, _ := strconv.Atoi(os.Args[2])
 		deleteTodo(id)
+	case "edit":
+		if len(os.Args) < 4 {
+			fmt.Println("错误：请输入任务 ID 和新任务标题")
+			return
+		}
+		id, _ := strconv.Atoi(os.Args[2])
+		title := os.Args[3]
+		updateTitle(id, title)
 	default:
 		printHelp()
 	}
@@ -168,4 +210,5 @@ func printHelp() {
 	fmt.Println("  list          - 列出所有任务")
 	fmt.Println("  done <ID>     - 完成任务")
 	fmt.Println("  del <ID>      - 删除任务")
+	fmt.Println("  edit <ID> <新标题> - 更新任务标题")
 }
