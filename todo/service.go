@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const timeFormat = "2006-01-02 15:04:05"
+
 func Add(title string) {
 	todos, _ := loadTodos()
 
@@ -26,14 +28,14 @@ func List() {
 	todos, _ := loadTodos()
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "ID\t任务\t状态\t创建时间")
+	fmt.Fprintln(w, "ID\t任务\t状态\t创建时间\t完成时间")
 	fmt.Fprintln(w, "")
 
 	for _, t := range todos {
 		if t.Completed {
-			fmt.Fprintf(w, "%d\t%s\t\033[32m%s\033[0m\t%s\n", t.ID, t.Title, "V", t.CreatedAt)
+			fmt.Fprintf(w, "%d\t%s\t\033[32m%s\033[0m\t%s\t%s\n", t.ID, t.Title, "V", t.CreatedAt.Format(timeFormat), t.CompletedAt.Format(timeFormat))
 		} else {
-			fmt.Fprintf(w, "%d\t%s\t\033[31m%s\033[0m\t%s\n", t.ID, t.Title, "X", t.CreatedAt)
+			fmt.Fprintf(w, "%d\t%s\t\033[31m%s\033[0m\t%s\n", t.ID, t.Title, "X", t.CreatedAt.Format(timeFormat))
 		}
 	}
 	w.Flush()
@@ -47,6 +49,7 @@ func Completed(id int) {
 	for i, t := range todos {
 		if t.ID == id {
 			todos[i].Completed = true
+			todos[i].CompletedAt = time.Now()
 			found = true
 			todo = todos[i]
 			break
